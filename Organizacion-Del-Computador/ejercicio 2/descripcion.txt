@@ -1,0 +1,6 @@
+Jeremias Broin Luque 45595240
+Jorge Alberto Mantegani 44971731
+Valentin Luna Olariaga 44578852
+
+el juego muestra un juego donde el objetivo es llegar a la "moneda" amarilla, no te podes chocar con los bordes.
+si es muy dificil puede usar espacio para bajarle la velocidad, si pierdes sube a la normal automaticamente. El movimiento es continuo
