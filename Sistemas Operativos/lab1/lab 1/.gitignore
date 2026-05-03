@@ -1,0 +1,7 @@
+*.Identifier
+*.o
+*.depend
+kickstart/tests/runner-command
+kickstart/tests/runner-parsing
+kickstart/tests/runner
+kickstart/tests/test.log
