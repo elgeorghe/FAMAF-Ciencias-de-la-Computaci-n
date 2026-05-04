@@ -1,0 +1,6 @@
+[0m[[0m[33mwarn[0m] [0m[0m/home/jorge/paradigmas/lab1/skeleton/src/main/scala/Main.scala:3:16: Main$1 has a valid main method (args: Array[String]): Unit,[0m
+[0m[[0m[33mwarn[0m] [0m[0m  but Main.Main$1 will not have an entry point on the JVM.[0m
+[0m[[0m[33mwarn[0m] [0m[0m  Reason: companion contains its own main method, which means no static forwarder can be generated.[0m
+[0m[[0m[33mwarn[0m] [0m[0m        object Main {[0m
+[0m[[0m[33mwarn[0m] [0m[0m               ^[0m
+[0m[[0m[33mwarn[0m] [0m[0mone warning found[0m
