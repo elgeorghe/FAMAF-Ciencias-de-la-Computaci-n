@@ -66,6 +66,6 @@ lab1/
 ```
 
 ## Next Steps
-- [ ] Implement RSS feed parsing
-- [ ] Add XML processing
-- [ ] Create feed subscription management
+- [done] Implement RSS feed parsing
+- [done] Add XML processing
+- [done] Create feed subscription management
