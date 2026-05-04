@@ -1,0 +1,6 @@
+# Dependencias para ejecutar los tests (hget-test.py, test_metrics.py).
+# La solución del lab (hget.py) solo usa la biblioteca estándar.
+pytest>=7.0
+pytest-cov>=4.0
+radon>=6.0
+ruff>=0.1.0

@@ -1,0 +1,565 @@
+openapi: 3.0.3
+info:
+  title: API Recomendador de Videojuegos
+  description: Laboratorio 2026 - Redes y Sistemas Distribuidos. API para gestionar usuarios, listas de juegos (tengo/quiero/jugado/me_gusta) e integración con Wikidata.
+  version: 2.0.0
+
+servers:
+  - url: http://localhost:5000
+    description: Servidor local
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: "Comprueba que el servicio está vivo. Uso típico: Docker HEALTHCHECK, monitoreo, balanceadores."
+      operationId: health
+      responses:
+        '200':
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /usuarios:
+    get:
+      summary: Listar usuarios
+      operationId: listar_usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+    post:
+      summary: Crear usuario
+      operationId: crear_usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre:
+                  type: string
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Datos inválidos
+
+  /usuarios/{usuario_id}:
+    get:
+      summary: Obtener usuario
+      operationId: obtener_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Usuario no encontrado
+    put:
+      summary: Actualizar usuario
+      description: "Actualiza datos de un usuario. Requiere un token válido en Authorization: Token <TOKEN> que pertenezca a ese usuario."
+      operationId: actualizar_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+      responses:
+        '200':
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Usuario no encontrado
+    delete:
+      summary: Eliminar usuario
+      description: "Elimina un usuario y su lista de juegos asociada. Requiere un token válido en Authorization: Token <TOKEN> que pertenezca a ese usuario."
+      operationId: eliminar_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+        '404':
+          description: Usuario no encontrado
+
+  /usuarios/{usuario_id}/juegos:
+    get:
+      summary: Listar juegos del usuario (mi lista)
+      operationId: listar_juegos_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: genero
+          in: query
+          schema:
+            type: string
+          description: Filtrar por género
+        - name: ordenar
+          in: query
+          schema:
+            type: string
+            enum: [nombre, fecha_lanzamiento, fecha_agregado]
+          description: Criterio de orden
+        - name: orden
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Dirección de ordenación (ascendente o descendente)
+      responses:
+        '200':
+          description: Lista de ítems de juegos del usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemLista'
+        '404':
+          description: Usuario no encontrado
+    post:
+      summary: Agregar juego a la lista del usuario (por id de juego del catálogo)
+      description: "Agrega un juego a la lista de un usuario. Requiere un token válido en Authorization: Token <TOKEN> que pertenezca a ese usuario."
+      operationId: agregar_juego_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgregarAListaInput'
+      responses:
+        '201':
+          description: Juego agregado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLista'
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Usuario o juego no encontrado
+        '409':
+          description: El juego ya está en la lista
+        '502':
+          description: Error al obtener juego (Wikidata no disponible)
+
+  /usuarios/{usuario_id}/juegos/{juego_id}:
+    put:
+      summary: Actualizar ítem de juego en la lista
+      description: "Actualiza flags del juego en la lista del usuario. Requiere un token válido en Authorization: Token <TOKEN> que pertenezca a ese usuario."
+      operationId: actualizar_juego_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: juego_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Id del juego en el catálogo (Wikidata Q-id)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tengo:
+                  type: boolean
+                quiero:
+                  type: boolean
+                jugado:
+                  type: boolean
+                me_gusta:
+                  type: boolean
+      responses:
+        '200':
+          description: Ítem actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemLista'
+        '404':
+          description: Usuario o juego no encontrado
+    delete:
+      summary: Eliminar juego de la lista del usuario
+      description: "Elimina un juego de la lista del usuario. Requiere un token válido en Authorization: Token <TOKEN> que pertenezca a ese usuario."
+      operationId: eliminar_juego_usuario
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: juego_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Id del juego en el catálogo (Wikidata Q-id)
+      responses:
+        '200':
+          description: Juego eliminado de la lista
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+        '404':
+          description: Usuario o juego no encontrado
+
+  /usuarios/{usuario_id}/sugerencia:
+    get:
+      summary: Sugerir un juego al azar entre los que tengo (opcionalmente por género)
+      operationId: sugerir_juego
+      parameters:
+        - name: usuario_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: genero
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Juego sugerido con nombre y descripcion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SugerenciaRespuesta'
+        '404':
+          description: Usuario no encontrado o sin juegos que cumplan criterio
+
+  /juegos:
+    get:
+      summary: Listar o buscar juegos (catálogo local o Wikidata)
+      operationId: listar_o_buscar_juegos
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Si se envía, busca por nombre. Sin q se listan todos los del catálogo.
+        - name: fuente
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [local, wikidata]
+            default: local
+          description: Con q, local busca en el catálogo; wikidata busca en Wikidata y actualiza el catálogo.
+        - name: genero
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filtrar por género
+        - name: ordenar
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [nombre, lanzamiento, genero, id]
+            default: id
+          description: Criterio de ordenación
+        - name: orden
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+          description: Dirección de ordenación (ascendente o descendente)
+      responses:
+        '200':
+          description: Lista de juegos (catálogo completo, búsqueda local o resultados Wikidata)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Juego'
+        '502':
+          description: Error al consultar Wikidata
+
+  /juegos/{id}:
+    get:
+      summary: Obtener juego por id (del catálogo o Wikidata)
+      operationId: obtener_juego
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Id del juego en Wikidata (ej. Q12395)
+      responses:
+        '200':
+          description: Juego
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Juego'
+        '404':
+          description: Juego no encontrado
+        '502':
+          description: Error al consultar Wikidata
+
+  /auth/registro:
+    post:
+      summary: Registrar usuario (auth)
+      description: Registra un nuevo usuario con username, nombre y password. No devuelve ni almacena contraseñas en texto plano.
+      operationId: registrar_usuario_auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegisterInput'
+      responses:
+        '201':
+          description: Usuario registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Datos inválidos
+        '409':
+          description: Username ya existe
+
+  /auth/login:
+    post:
+      summary: Iniciar sesión y obtener token
+      description: "Verifica credenciales y devuelve un token opaco con expiración. El token se usa en Authorization: Token &lt;TOKEN&gt; para acceder a endpoints protegidos."
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginInput'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '401':
+          description: Credenciales inválidas
+
+components:
+  schemas:
+    Usuario:
+      type: object
+      required: [id, nombre]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+
+    Juego:
+      type: object
+      description: >
+        Representa un juego en el catálogo global (poblado desde Wikidata).
+        Es el formato que devuelve GET /juegos y GET /juegos/{id}.
+      properties:
+        id:
+          type: string
+          description: Id del juego en Wikidata (Q-id, ej. Q12395).
+        nombre:
+          type: string
+          description: Nombre del juego.
+        genero:
+          type: string
+          description: Género principal del juego (texto libre).
+        lanzamiento:
+          type: string
+          description: Fecha de lanzamiento (texto libre).
+        plataforma:
+          type: string
+          description: Plataforma principal (texto libre).
+        descripcion:
+          type: string
+          description: Descripción corta del juego.
+
+    AgregarAListaInput:
+      type: object
+      description: >
+        Cuerpo JSON que el cliente envía para agregar un juego a la lista
+        de un usuario (POST /usuarios/{usuario_id}/juegos). No representa
+        la lista completa, solo el ítem a crear.
+      required: [juego_id, tengo, quiero, jugado, me_gusta]
+      properties:
+        juego_id:
+          type: string
+          description: Id del juego que ya existe en el catálogo (Wikidata Q-id, ej. Q12395).
+        tengo:
+          type: boolean
+          description: Flag inicial "tengo" para ese juego.
+        quiero:
+          type: boolean
+          description: Flag inicial "quiero" para ese juego.
+        jugado:
+          type: boolean
+          description: Flag inicial "jugado" para ese juego.
+        me_gusta:
+          type: boolean
+          description: Flag inicial "me_gusta" para ese juego.
+
+    ItemLista:
+      type: object
+      description: >
+        Ítem de la lista de un usuario. Combina datos del juego del catálogo
+        (Juego) con los flags de estado del usuario y la fecha en que se agregó.
+        Internamente se construye a partir de LISTAS_JUEGOS y CATALOGO_JUEGOS en store.py.
+      required: [id, nombre, descripcion, tengo, quiero, jugado, me_gusta, fecha_agregado]
+      properties:
+        id:
+          type: string
+          description: Id del juego en el catálogo (Wikidata Q-id, usado en PUT/DELETE).
+        nombre:
+          type: string
+          description: Nombre del juego.
+        genero:
+          type: string
+          description: Género del juego (texto libre).
+        lanzamiento:
+          type: string
+          description: Fecha de lanzamiento del juego (texto libre).
+        plataforma:
+          type: string
+          description: Plataforma principal del juego (texto libre).
+        descripcion:
+          type: string
+          description: Descripción corta del juego.
+        tengo:
+          type: boolean
+          description: Flag "tengo" en la lista del usuario.
+        quiero:
+          type: boolean
+          description: Flag "quiero" en la lista del usuario.
+        jugado:
+          type: boolean
+          description: Flag "jugado" en la lista del usuario.
+        me_gusta:
+          type: boolean
+          description: Flag "me_gusta" en la lista del usuario.
+        fecha_agregado:
+          type: string
+          format: date-time
+          description: Fecha y hora (ISO 8601) en que el usuario agregó el juego a su lista.
+
+    SugerenciaRespuesta:
+      type: object
+      required: [nombre, descripcion]
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        genero:
+          type: string
+        lanzamiento:
+          type: string
+        plataforma:
+          type: string
+
+    AuthRegisterInput:
+      type: object
+      required: [username, nombre, password]
+      properties:
+        username:
+          type: string
+        nombre:
+          type: string
+        password:
+          type: string
+
+    AuthLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthLoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string

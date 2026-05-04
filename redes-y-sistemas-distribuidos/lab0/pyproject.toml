@@ -1,0 +1,49 @@
+[project]
+name = "lab0-kickstarter"
+version = "0.1.0"
+description = "Lab 0 - Cliente HTTP (kickstart para alumnos)"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=hget",
+    "--cov-report=term-missing",
+    "--cov-fail-under=65",
+]
+testpaths = ["."]
+python_files = ["hget-test.py", "test_metrics.py"]
+python_functions = "test_*"
+markers = [
+    "integration: tests that start the real server (run with pytest -m integration to include)",
+]
+
+[tool.coverage.run]
+source = ["hget.py"]
+omit = ["hget-test.py", "test_metrics.py", "*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 65
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+src = ["hget.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "B",      # Bugbear
+    "C4",     # flake8-comprehensions
+]
+ignore = [
+    "E501",   # line too long
+    "W191",   # indentation contains tabs (legacy)
+    "F401",   # unused import (el kickstart puede tener random sin usar hasta implementar DNS)
+]

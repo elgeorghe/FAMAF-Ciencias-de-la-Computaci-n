@@ -1,0 +1,24 @@
+# Entorno y cachés
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+.ruff_cache
+
+# Repo y local
+.git
+.gitignore
+.env
+*.md
+!openapi.yaml
+
+# Tests (no necesarios en la imagen de ejecución)
+tests/
+
+# Desarrollo y grading
+grade.py
+Makefile
+pyproject.toml

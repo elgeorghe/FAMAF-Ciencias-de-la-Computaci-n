@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - FLASK_DEBUG=1
+    volumes:
+      - ./src:/app/src
+      - ./openapi.yaml:/app/openapi.yaml
